@@ -14,7 +14,7 @@ Se till att programmet följer god praxis för objektorienterad programmering in
 Testa programmet genom att låna ut och återlämna böcker samt visa korrekt information om tillgängliga böcker och låntagare.
 
 */
-//TODO: dela upp library i minst två klasser
+//TODO: SKAPA MENU FÖR ATT SE LÅNETAGARE OCH SÖKA LÅNETAGARE!"
 //TODO: hur implementerar vi arv?
 //TODO: spara data
 //TODO: att man kan komma ur val genom att t.ex. trycka på esc.
@@ -23,6 +23,7 @@ Testa programmet genom att låna ut och återlämna böcker samt visa korrekt in
 //TODO: lägg till en funktion som gör det möjligt att redigera uppgifter
 //TODO: gå igenom att public, private, static osv är korrekt
 //TODO: lägg till kommentarer
+//TODO: lägg till console title
 
 using System;
 using System.Globalization;
@@ -96,7 +97,7 @@ public class BookHandling
     {
         this.borrowerHandling = borrowerHandling;
     }
-    
+
     /// <summary>
     /// Asks the user for number. Validates if correct number and returns a book from a list depending on the number.
     /// </summary>
@@ -337,6 +338,13 @@ public class BookHandling
         DisplayBooks(allLibraryBooks);
         UI.PressAKeyToContinue();
     }
+    private void DisplayBooks(List<Book> books)
+    {
+        for (int i = 0; i < books.Count; i++)
+        {
+            Console.WriteLine($"{i + 1}: {books[i].PrintOut()}");
+        }
+    }
     /// <summary>
     /// Asks the user of a search word and returns a list of books containing that word.
     /// </summary>
@@ -389,13 +397,7 @@ public class BookHandling
         }
         return freeBooks;
     }
-    private void DisplayBooks(List<Book> books)
-    {
-        for (int i = 0; i < books.Count; i++)
-        {
-            Console.WriteLine($"{i + 1}: {books[i].PrintOut()}");
-        }
-    }
+
     #endregion
 }
 
@@ -537,29 +539,36 @@ public class UI
         while (true)
         {
             Console.Clear();
-            Console.WriteLine("This is the main menu.");
-            Console.WriteLine("1 - Add new borrower or book to the library");
-            Console.WriteLine("2 - Find a book");
-            Console.WriteLine("3 - Loan out a book");
-            Console.WriteLine("4 - Return a book");
-            Console.WriteLine("5 - Close program");
+            Console.WriteLine("=================");
+            Console.WriteLine("Library Main menu");
+            Console.WriteLine("=================");
+            Console.WriteLine("1 - Find a book");
+            Console.WriteLine("2 - Lend out a book");
+            Console.WriteLine("3 - Return a book");
+            Console.WriteLine("4 - Manage books");
+            Console.WriteLine("5 - Manage borrowers");
+            Console.WriteLine("6 - Exit program");
+            Console.WriteLine("=================");
 
             string userChoice = Console.ReadLine();
             switch (userChoice)
             {
                 case "1":
-                    AddItemMenu();
-                    break;
-                case "2":
                     SearchABookMenu();
                     break;
-                case "3":
+                case "2":
                     LoanBookMenu();
                     break;
-                case "4":
+                case "3":
                     ReturnBookMenu();
                     break;
+                case "4":
+                    ManageBooksMenu();
+                    break;
                 case "5":
+                    ManageBorrowersMenu();
+                    break;
+                case "6":
                     Environment.Exit(0);
                     break;
                 default:
@@ -569,11 +578,15 @@ public class UI
         }
     }
 
+
+
     private void AddItemMenu()
     {
         Console.Clear();
         while (true)
         {
+            
+            Console.WriteLine();
             Console.WriteLine("Please choose an item to add:");
             Console.WriteLine();
             Console.WriteLine("1 - New borrower");
@@ -602,13 +615,18 @@ public class UI
         Console.Clear();
         while (true)
         {
-            Console.WriteLine("How do you want to find a book:");
+            Console.WriteLine("====================================");
+            Console.WriteLine("Find a book menu");
+            Console.WriteLine("====================================");
             Console.WriteLine();
-            Console.WriteLine("1 - Search for the book");
+            Console.WriteLine("1 - Search for a book");
             Console.WriteLine();
             Console.WriteLine("2 - List all books");
             Console.WriteLine();
             Console.WriteLine("3 - Return to main menu");
+            Console.WriteLine();
+            Console.WriteLine("====================================");
+            ChooseAnOptionAndPressEnter();
 
             string userchoice = Console.ReadLine();
 
@@ -624,20 +642,24 @@ public class UI
                 default: Console.WriteLine("Invalid choice"); break;
             }
         }
-    }
-    private void LoanBookMenu()
+    } // KLAR
+    private void LoanBookMenu() //KLAR
     {
         Console.Clear();
         while (true)
         {
-            Console.WriteLine("You are about loan a book.");
-            Console.WriteLine("Do you want to:");
+            Console.WriteLine("====================================");
+            Console.WriteLine("Lend out a book menu");
+            Console.WriteLine("====================================");
             Console.WriteLine();
             Console.WriteLine("1. List all free books to loan");
             Console.WriteLine();
             Console.WriteLine("2. Search for a free book to loan");
             Console.WriteLine();
             Console.WriteLine("3. Return to main menu");
+            Console.WriteLine();
+            Console.WriteLine("====================================");
+            ChooseAnOptionAndPressEnter();
 
             string userchoice = Console.ReadLine();
 
@@ -656,18 +678,23 @@ public class UI
 
 
     }
-    private void ReturnBookMenu()
+    private void ReturnBookMenu() //KLAR
     {
         Console.Clear();
         while (true)
         {
-            Console.WriteLine("You are about to return a loaned book.");
-            Console.WriteLine("Do you want to:");
-            Console.WriteLine("1. List all loaned out books");
+            Console.WriteLine("====================================");
+            Console.WriteLine("Return a book menu");
+            Console.WriteLine("====================================");
+            Console.WriteLine();
+            Console.WriteLine("1. Show a list of all lend out books");
             Console.WriteLine();
             Console.WriteLine("2. Search of for the book to return");
             Console.WriteLine();
             Console.WriteLine("3. Return to main menu");
+            Console.WriteLine();
+            Console.WriteLine("====================================");
+            ChooseAnOptionAndPressEnter();
 
             string userchoice = Console.ReadLine();
 
@@ -685,6 +712,76 @@ public class UI
         }
 
 
+    }
+    private void ManageBooksMenu() // KLAR
+    {
+        Console.WriteLine("====================================");
+        Console.WriteLine("Manage books menu");
+        Console.WriteLine("====================================");
+        Console.WriteLine();
+        Console.WriteLine("1 - Add a book to the library");
+        Console.WriteLine();
+        Console.WriteLine("2 - Return to main menu");
+        Console.WriteLine();
+        Console.WriteLine("====================================");
+        ChooseAnOptionAndPressEnter();
+
+        string userchoice = Console.ReadLine();
+
+        switch (userchoice)
+        {
+            case "1":
+                bookLibrary.AddNewBook();
+                break;
+            case "2": return;
+            default:
+                Console.WriteLine("Invalid choice"); break;
+        }
+    }
+    private void ManageBorrowersMenu() //EJ KLAR
+    {
+        Console.Clear();
+        while (true)
+        {
+            Console.WriteLine("====================================");
+            Console.WriteLine("Manage borrower");
+            Console.WriteLine("====================================");
+            Console.WriteLine();
+            Console.WriteLine("1 - Show a list of current borrowers");
+            Console.WriteLine();
+            Console.WriteLine("2 - Search for a borrower");
+            Console.WriteLine();
+            Console.WriteLine("3 - Add a borrower to the library");
+            Console.WriteLine();
+            Console.WriteLine("4 - Return to main menu");
+            Console.WriteLine();
+            Console.WriteLine("====================================");
+            ChooseAnOptionAndPressEnter();
+
+            string userchoice = Console.ReadLine();
+
+            switch (userchoice)
+            {
+                case "1":
+                    //TODO: SKAPA METOD
+                    break;
+                case "2":
+                    //TODO: SKAPA METOD
+                    break;
+                case "3":
+                    borrowerLibrary.AddNewBorrower();
+                    break;
+                case "4": return;
+                default:
+                    Console.WriteLine("Invalid choice"); break;
+            }
+        }
+    } // TODO: EJ KLAR
+
+    private void ChooseAnOptionAndPressEnter()
+    {
+        Console.WriteLine();
+        Console.Write("Choose an options from the menu a press Enter: ");
     }
 
     /// <summary>
