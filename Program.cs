@@ -29,9 +29,9 @@ using System.Globalization;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Runtime.InteropServices;
-
-Library myLibrary = new Library();
-UI ui = new UI(myLibrary);
+BorrowerHandling myBorrowerHandling = new BorrowerHandling();
+BookHandling myBookHandling = new BookHandling(myBorrowerHandling);
+UI ui = new UI(myBookHandling, myBorrowerHandling);
 ui.MainMenu();
 
 public class Book
@@ -83,60 +83,6 @@ public class Book
 
 public class BookHandling
 {
-
-}
-
-public class Borrower
-{
-    public string FirstName { get; init; }
-    public string LastName { get; init; }
-    public long socialSecurityNumber { get; init; }
-    List<Book> borrowedBooks = new List<Book>();
-
-    public Borrower(string firstName, string lastName, long socialSecurityNumber)
-    {
-        FirstName = firstName;
-        LastName = lastName;
-        this.socialSecurityNumber = socialSecurityNumber;
-    }
-
-    /// <summary>
-    /// Takes a number and controlls if is valid. Returns true if valid social security number.
-    /// </summary>
-    /// <param name="socialSecurityNumber"></param>
-    /// <returns></returns>
-    public static bool IsValidSocialSecurityNumber(long socialSecurityNumber)
-    {
-
-        string ssnString = socialSecurityNumber.ToString(); //Converts the int number to a string.
-        if (!(ssnString.Length == 12)) // Validates that the number is 12 digits
-        {
-            return false;
-        }
-        ssnString = ssnString.Substring(0, 8); // Removes the 4 last digits.
-
-        DateTime parsedDate; //Var that saves a successfully converted DateTime
-        if (!(DateTime.TryParseExact(ssnString, "yyyyMMdd", CultureInfo.InvariantCulture, DateTimeStyles.None, out parsedDate))) // Validates if the string can be converted to a string.
-        {
-            return false;
-        }
-
-        if ((parsedDate < DateTime.Now) && (parsedDate > new DateTime(1900, 01, 01))) // Validates that the given birthday is not in the future and within reasoneble time.
-        {
-            return true;
-        }
-
-        return false;
-    }
-}
-
-public class BorrowerHandling
-{
-
-}
-public class Library
-{
-    // Lista med samtliga böcker i biblioteket. Jag la till några färdiga böcker i biblioteket.
     List<Book> allLibraryBooks = new List<Book>()
     {
         new Book("A Tale of Two Cities", "Charles Dickens", 1859),
@@ -144,19 +90,13 @@ public class Library
         new Book("The Lord of the Rings", "J.R.R. Tolkien", 1955),
         new Book("Harry Potter and the Philosopher's Stone", "J. K. Rowling", 1997)
     };
+    private BorrowerHandling borrowerHandling;
 
-    List<Borrower> allLibraryBorrowers = new List<Borrower>()
+    public BookHandling(BorrowerHandling borrowerHandling)
     {
-        new Borrower("Test", "Testare", 198705291410)
-    };
-
-    private static void PressAKeyToContinue()
-    {
-        Console.WriteLine();
-        Console.WriteLine("Please press a key to continue.");
-        Console.ReadKey();
-        Console.Clear();
+        this.borrowerHandling = borrowerHandling;
     }
+    
     /// <summary>
     /// Asks the user for number. Validates if correct number and returns a book from a list depending on the number.
     /// </summary>
@@ -179,77 +119,6 @@ public class Library
         }
     }
 
-    #region Methods that handle borrowers in the library
-    public void AddNewBorrower()
-    {
-        Console.WriteLine("You are about to add a new user.");
-        Console.Write("Please enter borrowers first name:");
-        string firstName = Console.ReadLine();
-        Console.Write("Please enter borrowers last name:");
-        string lastName = Console.ReadLine();
-        long socialSecurityNumber = GetSocialSecurityNumber();
-
-        if (BorrowerExist(socialSecurityNumber, out Borrower CurrentBorrower))
-        {
-            Console.WriteLine("A person with that social security number already exist.");
-            Console.WriteLine("Please press a key to continue.");
-            Console.ReadKey();
-            Console.Clear();
-        }
-        else
-        {
-            allLibraryBorrowers.Add(new Borrower(firstName, lastName, socialSecurityNumber)); // Creates a new user and adds it to the list of Borrowers.
-            Console.WriteLine($"{firstName} {lastName} added as a borrower to the library.");
-            Console.WriteLine("Please press a key to continue.");
-            Console.ReadKey();
-            Console.Clear();
-
-        }
-
-    }
-
-    private static long GetSocialSecurityNumber()
-    {
-        bool isValidInput = false;
-        long socialSecurityNumber = 0;
-        while (!isValidInput)
-        {
-            Console.Write("Please enter borrowers social security number (12 digits):");
-            if (long.TryParse(Console.ReadLine(), out long userInput))
-            {
-                if (Borrower.IsValidSocialSecurityNumber(userInput))
-                {
-                    socialSecurityNumber = userInput;
-                    isValidInput = true;
-                }
-                else
-                {
-                    Console.WriteLine("Not a valid number.");
-                }
-            }
-            else
-            {
-                Console.WriteLine("Please enter digits only.");
-            }
-        }
-        return socialSecurityNumber;
-    }
-
-    public bool BorrowerExist(long socialSecurityNumberToControll, out Borrower currentBorrower)
-    {
-        currentBorrower = null;
-        foreach (Borrower borrower in allLibraryBorrowers)
-        {
-            if (borrower.socialSecurityNumber == socialSecurityNumberToControll)
-            {
-                currentBorrower = borrower;
-                return true;
-            }
-        }
-        return false;
-    }
-    #endregion
-
     #region Methods to handle adding book to the library
     internal void AddNewBook()
     {
@@ -270,7 +139,7 @@ public class Library
                 switch (userChoice)
                 {
                     case "y":
-                        PressAKeyToContinue();
+                        UI.PressAKeyToContinue();
                         return; // Exit the method
                     case "n":
                         bookTitleExist = true;
@@ -289,7 +158,7 @@ public class Library
         if (existingBook != null && userInputAuthor.ToLower() == existingBook.author.ToLower())
         {
             Console.WriteLine($"{existingBook.title} by {existingBook.author} already exists.");
-            PressAKeyToContinue();
+            UI.PressAKeyToContinue();
             return; // Exit the method
         }
         while (true)
@@ -297,11 +166,11 @@ public class Library
             Console.WriteLine("Please enter the publishing year of the book");
             if (Int32.TryParse(Console.ReadLine(), out int year))
             {
-                if (validDate(year))
+                if (ValidDate(year))
                 {
                     allLibraryBooks.Add(new Book(userInputTitle, userInputAuthor, year));
                     Console.WriteLine($"{userInputTitle} by {userInputAuthor} has been added to the library.");
-                    PressAKeyToContinue();
+                    UI.PressAKeyToContinue();
                     return;
                 }
                 else
@@ -318,7 +187,7 @@ public class Library
     /// </summary>
     /// <param name="year"></param>
     /// <returns></returns>
-    private bool validDate(int year)
+    private static bool ValidDate(int year)
     {
 
         if (year < DateTime.Now.Year)
@@ -366,7 +235,7 @@ public class Library
         if (books.Count == 0)
         {
             Console.WriteLine("No available books at the moment.");
-            PressAKeyToContinue();
+            UI.PressAKeyToContinue();
             return;
         }
 
@@ -388,17 +257,17 @@ public class Library
             Console.WriteLine("Invalid book selection.");
         }
 
-        long socialSecurityNumber = GetSocialSecurityNumber();
-        if (BorrowerExist(socialSecurityNumber, out Borrower currentBorrower))
+        long socialSecurityNumber = BorrowerHandling.GetSocialSecurityNumber();
+        if (borrowerHandling.BorrowerExist(socialSecurityNumber, out Borrower currentBorrower))
         {
             selectedBook.BorrowBook(currentBorrower);
             Console.WriteLine($"{selectedBook.title} has been borrowed by {currentBorrower.FirstName} {currentBorrower.LastName}.");
-            PressAKeyToContinue();
+            UI.PressAKeyToContinue();
         }
         else
         {
             Console.WriteLine("Borrower not found or not valid. Please create a valid borrower first.");
-            PressAKeyToContinue();
+            UI.PressAKeyToContinue();
         }
     }
     #endregion
@@ -458,7 +327,7 @@ public class Library
             Console.WriteLine("Matches found:\n");
 
             DisplayBooks(foundBooks);
-            PressAKeyToContinue();
+            UI.PressAKeyToContinue();
         }
 
 
@@ -466,7 +335,7 @@ public class Library
     internal void PrintAllBooks()
     {
         DisplayBooks(allLibraryBooks);
-        PressAKeyToContinue();
+        UI.PressAKeyToContinue();
     }
     /// <summary>
     /// Asks the user of a search word and returns a list of books containing that word.
@@ -529,13 +398,140 @@ public class Library
     }
     #endregion
 }
+
+public class Borrower
+{
+    public string FirstName { get; init; }
+    public string LastName { get; init; }
+    public long socialSecurityNumber { get; init; }
+    List<Book> borrowedBooks = new List<Book>();
+
+    public Borrower(string firstName, string lastName, long socialSecurityNumber)
+    {
+        FirstName = firstName;
+        LastName = lastName;
+        this.socialSecurityNumber = socialSecurityNumber;
+    }
+
+    /// <summary>
+    /// Takes a number and controlls if is valid. Returns true if valid social security number.
+    /// </summary>
+    /// <param name="socialSecurityNumber"></param>
+    /// <returns></returns>
+    public static bool IsValidSocialSecurityNumber(long socialSecurityNumber)
+    {
+
+        string ssnString = socialSecurityNumber.ToString(); //Converts the int number to a string.
+        if (!(ssnString.Length == 12)) // Validates that the number is 12 digits
+        {
+            return false;
+        }
+        ssnString = ssnString.Substring(0, 8); // Removes the 4 last digits.
+
+        DateTime parsedDate; //Var that saves a successfully converted DateTime
+        if (!(DateTime.TryParseExact(ssnString, "yyyyMMdd", CultureInfo.InvariantCulture, DateTimeStyles.None, out parsedDate))) // Validates if the string can be converted to a string.
+        {
+            return false;
+        }
+
+        if ((parsedDate < DateTime.Now) && (parsedDate > new DateTime(1900, 01, 01))) // Validates that the given birthday is not in the future and within reasoneble time.
+        {
+            return true;
+        }
+
+        return false;
+    }
+}
+
+public class BorrowerHandling
+{
+    List<Borrower> allLibraryBorrowers = new List<Borrower>()
+    {
+        new Borrower("Test", "Testare", 198705291410)
+    };
+
+    #region Methods that handle borrowers in the library
+    public void AddNewBorrower()
+    {
+        Console.WriteLine("You are about to add a new user.");
+        Console.Write("Please enter borrowers first name:");
+        string firstName = Console.ReadLine();
+        Console.Write("Please enter borrowers last name:");
+        string lastName = Console.ReadLine();
+        long socialSecurityNumber = GetSocialSecurityNumber();
+
+        if (BorrowerExist(socialSecurityNumber, out Borrower CurrentBorrower))
+        {
+            Console.WriteLine("A person with that social security number already exist.");
+            Console.WriteLine("Please press a key to continue.");
+            Console.ReadKey();
+            Console.Clear();
+        }
+        else
+        {
+            allLibraryBorrowers.Add(new Borrower(firstName, lastName, socialSecurityNumber)); // Creates a new user and adds it to the list of Borrowers.
+            Console.WriteLine($"{firstName} {lastName} added as a borrower to the library.");
+            Console.WriteLine("Please press a key to continue.");
+            Console.ReadKey();
+            Console.Clear();
+
+        }
+
+    }
+
+    public static long GetSocialSecurityNumber()
+    {
+        bool isValidInput = false;
+        long socialSecurityNumber = 0;
+        while (!isValidInput)
+        {
+            Console.Write("Please enter borrowers social security number (12 digits):");
+            if (long.TryParse(Console.ReadLine(), out long userInput))
+            {
+                if (Borrower.IsValidSocialSecurityNumber(userInput))
+                {
+                    socialSecurityNumber = userInput;
+                    isValidInput = true;
+                }
+                else
+                {
+                    Console.WriteLine("Not a valid number.");
+                }
+            }
+            else
+            {
+                Console.WriteLine("Please enter digits only.");
+            }
+        }
+        return socialSecurityNumber;
+    }
+
+    public bool BorrowerExist(long socialSecurityNumberToControll, out Borrower currentBorrower)
+    {
+        currentBorrower = null;
+        foreach (Borrower borrower in allLibraryBorrowers)
+        {
+            if (borrower.socialSecurityNumber == socialSecurityNumberToControll)
+            {
+                currentBorrower = borrower;
+                return true;
+            }
+        }
+        return false;
+    }
+    #endregion
+}
 public class UI
 {
-    private Library library;
-    public UI(Library library)
+    private BookHandling bookLibrary;
+    private BorrowerHandling borrowerLibrary;
+
+    public UI(BookHandling bookLibrary, BorrowerHandling borrowerLibrary)
     {
-        this.library = library;
+        this.bookLibrary = bookLibrary;
+        this.borrowerLibrary = borrowerLibrary;
     }
+
     public void MainMenu()
     {
         while (true)
@@ -591,10 +587,10 @@ public class UI
             switch (userchoice)
             {
                 case "1":
-                    library.AddNewBorrower();
+                    borrowerLibrary.AddNewBorrower();
                     break;
                 case "2":
-                    library.AddNewBook();
+                    bookLibrary.AddNewBook();
                     break;
                 case "3": return;
                 default: Console.WriteLine("Invalid choice"); break;
@@ -619,10 +615,10 @@ public class UI
             switch (userchoice)
             {
                 case "1":
-                    library.FindABook();
+                    bookLibrary.FindABook();
                     break;
                 case "2":
-                    library.PrintAllBooks();
+                    bookLibrary.PrintAllBooks();
                     break;
                 case "3": return;
                 default: Console.WriteLine("Invalid choice"); break;
@@ -648,10 +644,10 @@ public class UI
             switch (userchoice)
             {
                 case "1":
-                    library.LoanABookFromAList();
+                    bookLibrary.LoanABookFromAList();
                     break;
                 case "2":
-                    library.SearchABookToLoan();
+                    bookLibrary.SearchABookToLoan();
                     break;
                 case "3": return; ;
                 default: Console.WriteLine("Invalid choice"); break;
@@ -678,10 +674,10 @@ public class UI
             switch (userchoice)
             {
                 case "1":
-                    library.ReturnABookFromAList();
+                    bookLibrary.ReturnABookFromAList();
                     break;
                 case "2":
-                    library.SearchABookToReturn();
+                    bookLibrary.SearchABookToReturn();
                     break;
                 case "3": return; ;
                 default: Console.WriteLine("Invalid choice"); break;
@@ -689,6 +685,17 @@ public class UI
         }
 
 
+    }
+
+    /// <summary>
+    /// Provides a way to pause the program and prompt the user to press a key to continue
+    /// </summary>
+    public static void PressAKeyToContinue()
+    {
+        Console.WriteLine();
+        Console.WriteLine("Please press a key to continue.");
+        Console.ReadKey();
+        Console.Clear();
     }
 }
 
