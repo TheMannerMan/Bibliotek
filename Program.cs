@@ -443,6 +443,24 @@ public class Borrower
 
         return false;
     }
+
+    public string PrintOut()
+    {
+        string message = "Books in loan:";
+        if (borrowedBooks.Count == 0)
+        {
+            message += "\nNo books in loan.";
+        }
+        else
+        foreach (Book book in borrowedBooks)
+            {
+                message += $"\n";
+                message += book.PrintOut();
+            }
+
+        return ($"Borrower: {this.FirstName} {this.LastName}, social security number: {this.socialSecurityNumber.ToString()} \n" + message);
+        
+    }
 }
 
 public class BorrowerHandling
@@ -520,6 +538,36 @@ public class BorrowerHandling
             }
         }
         return false;
+    }
+
+    internal void FindABorrower()
+    {
+        List<Borrower> foundBorrowers = BorrowerSearch();
+
+        if (foundBorrowers == null)
+        {
+            Console.WriteLine("No mathes found");
+        }
+        else
+        {
+            Console.WriteLine("Mathes found: \n");
+
+            //TODO SKAPA EN DISPLAY 
+            UI.PressAKeyToContinue();
+        }
+    }
+
+    private List<Borrower> BorrowerSearch()
+    {
+        Console.Clear();
+        Console.Write("Please enter a searchword: ");
+        string searchWord = Console.ReadLine();
+
+        List<Borrower> results = allLibraryBorrowers.
+            Where(borrower => borrower.FirstName.Contains(searchWord, StringComparison.OrdinalIgnoreCase) || 
+            borrower.LastName.Contains(searchWord, StringComparison.OrdinalIgnoreCase) ||
+            borrower.socialSecurityNumber.ToString().Contains(searchWord, StringComparison.OrdinalIgnoreCase)).ToList();
+        return results;
     }
     #endregion
 }
@@ -747,9 +795,9 @@ public class UI
             Console.WriteLine("Manage borrower");
             Console.WriteLine("====================================");
             Console.WriteLine();
-            Console.WriteLine("1 - Show a list of current borrowers");
+            Console.WriteLine("1 - Search for a borrower ");
             Console.WriteLine();
-            Console.WriteLine("2 - Search for a borrower");
+            Console.WriteLine("2 - Show a list of current borrowers");
             Console.WriteLine();
             Console.WriteLine("3 - Add a borrower to the library");
             Console.WriteLine();
@@ -763,7 +811,7 @@ public class UI
             switch (userchoice)
             {
                 case "1":
-                    //TODO: SKAPA METOD
+                    borrowerLibrary.FindABorrower();
                     break;
                 case "2":
                     //TODO: SKAPA METOD
