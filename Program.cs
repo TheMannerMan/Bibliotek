@@ -3,7 +3,7 @@
  * [X] Låna ut böcker till låntagare
  * [X] Återlämna böcker
  * [X] Visa tillgängliga böcker
- * [] Visa låntagare och deras lånade böcker
+ * [X] Visa låntagare och deras lånade böcker
 
 Använd listor och/eller andra lämpliga datastrukturer/filer för att hantera samlingar av böcker och låntagare.
 
@@ -14,9 +14,8 @@ Se till att programmet följer god praxis för objektorienterad programmering in
 Testa programmet genom att låna ut och återlämna böcker samt visa korrekt information om tillgängliga böcker och låntagare.
 
 */
-//TODO: SKAPA MENU FÖR ATT SE LÅNETAGARE OCH SÖKA LÅNETAGARE!"
+
 //TODO: hur implementerar vi arv?
-//TODO: spara data
 //TODO: att man kan komma ur val genom att t.ex. trycka på esc.
 //TODO:Hantera exceptions och liknande
 //TODO: innan man lägger till bok eller låntagare, bekfräfta rätt uppgifter
@@ -25,21 +24,35 @@ Testa programmet genom att låna ut och återlämna böcker samt visa korrekt in
 //TODO: lägg till kommentarer
 //TODO: lägg till console title
 
+// Kommentar till arv. Klassen borrower och book har flertal likheter, t.ex. metoden PrintOut() och sättet programmet spar ner data i Json format. Här ser jag en möjlighet att implementera ett interface
+// för att möjliggöra att båda klasserna delar på gemensamma metoder.
+
+using Newtonsoft.Json;
 using System;
+using System.ComponentModel.Design;
 using System.Globalization;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Runtime.InteropServices;
-BorrowerHandling myBorrowerHandling = new BorrowerHandling();
-BookHandling myBookHandling = new BookHandling(myBorrowerHandling);
+using static System.Reflection.Metadata.BlobBuilder;
+
+
+List<Book> allLibraryBooks = new List<Book>();
+List<Borrower> allLibraryBorrowers = new List<Borrower>();
+
+
+DataRepository repository = new DataRepository();
+BorrowerHandling myBorrowerHandling = new BorrowerHandling(repository);
+BookHandling myBookHandling = new BookHandling(myBorrowerHandling, repository);
 UI ui = new UI(myBookHandling, myBorrowerHandling);
+
 ui.MainMenu();
 
 public class Book
 {
-    public readonly string title;
-    public readonly string author;
-    public readonly int publishedYear;
+    public string title;
+    public string author;
+    public int publishedYear;
     public Borrower BorrowedTo { get; private set; } = null;
     public bool IsBorrowed { get; set; } = false;
 
@@ -71,31 +84,28 @@ public class Book
         string bookStatus;
         if (this.IsBorrowed == true)
         {
-            bookStatus = "Unavailable";
+            bookStatus = "On loan";
         }
         else
         {
-            bookStatus = "Available";
+            bookStatus = "Free";
         }
         //TODO: Snygga till formatet.
-        return ($"\tTitle:{this.title}\tAuthor: {this.author}\tPublished: {this.publishedYear}\tStatus: {bookStatus}");
+        return ($"\tTitle:{this.title}\tAuthor: {this.author}\tPublished: {this.publishedYear}\tLoan status: {bookStatus}");
     }
 }
 
 public class BookHandling
 {
-    List<Book> allLibraryBooks = new List<Book>()
-    {
-        new Book("A Tale of Two Cities", "Charles Dickens", 1859),
-        new Book("The Little Prince", "Antoine de Saint-Exupéry", 1943),
-        new Book("The Lord of the Rings", "J.R.R. Tolkien", 1955),
-        new Book("Harry Potter and the Philosopher's Stone", "J. K. Rowling", 1997)
-    };
     private BorrowerHandling borrowerHandling;
+    private DataRepository _dataRepository;
+    public List<Book> allLibraryBooks;
 
-    public BookHandling(BorrowerHandling borrowerHandling)
+    public BookHandling(BorrowerHandling borrowerHandling, DataRepository repository)
     {
         this.borrowerHandling = borrowerHandling;
+        _dataRepository = repository;
+        allLibraryBooks = repository.LoadBooksFromFile();
     }
 
     /// <summary>
@@ -120,13 +130,23 @@ public class BookHandling
         }
     }
 
+    public void SaveCurrentStatusOfBooks()
+    {
+        _dataRepository.SaveBooksToFile(this.allLibraryBooks);
+    }
+
     #region Methods to handle adding book to the library
     internal void AddNewBook()
     {
         //TODO: Hantera null och tomma inputs
         Console.WriteLine("You are about to add a new book to the library.");
         Console.WriteLine("Please enter the title of the book:");
-        string userInputTitle = Console.ReadLine();
+        string userInputTitle = UI.GetInputWithCancel();
+        Console.WriteLine(); // To make a new line in console for better design.
+        if (userInputTitle == null)
+        {
+            return;
+        }
         Book existingBook = null;
         bool bookTitleExist = false;
 
@@ -155,7 +175,12 @@ public class BookHandling
 
     labelContinueHere:
         Console.WriteLine("Please enter the author of the book");
-        string userInputAuthor = Console.ReadLine();
+        string userInputAuthor = UI.GetInputWithCancel();
+        Console.WriteLine(); // To make a new line in console for better design.
+        if (userInputAuthor == null)
+        {
+            return;
+        }
         if (existingBook != null && userInputAuthor.ToLower() == existingBook.author.ToLower())
         {
             Console.WriteLine($"{existingBook.title} by {existingBook.author} already exists.");
@@ -165,11 +190,17 @@ public class BookHandling
         while (true)
         {
             Console.WriteLine("Please enter the publishing year of the book");
-            if (Int32.TryParse(Console.ReadLine(), out int year))
+            string year = UI.GetInputWithCancel();
+            Console.WriteLine(); // To make a new line in console for better design.
+            if (year == null)
             {
-                if (ValidDate(year))
+                return;
+            }
+            if (Int32.TryParse(year, out int parsedYear))
+            {
+                if (ValidDate(parsedYear))
                 {
-                    allLibraryBooks.Add(new Book(userInputTitle, userInputAuthor, year));
+                    allLibraryBooks.Add(new Book(userInputTitle, userInputAuthor, parsedYear));
                     Console.WriteLine($"{userInputTitle} by {userInputAuthor} has been added to the library.");
                     UI.PressAKeyToContinue();
                     return;
@@ -262,6 +293,7 @@ public class BookHandling
         if (borrowerHandling.BorrowerExist(socialSecurityNumber, out Borrower currentBorrower))
         {
             selectedBook.BorrowBook(currentBorrower);
+            currentBorrower.borrowedBooks.Add(selectedBook);
             Console.WriteLine($"{selectedBook.title} has been borrowed by {currentBorrower.FirstName} {currentBorrower.LastName}.");
             UI.PressAKeyToContinue();
         }
@@ -305,7 +337,9 @@ public class BookHandling
         DisplayBooks(bookList);
 
         Book userChoiceOfBook = SelectABookFromAList(bookList, "return");
+        Borrower currentBorrower = userChoiceOfBook.BorrowedTo;
         userChoiceOfBook.Return();
+        currentBorrower.borrowedBooks.Remove(userChoiceOfBook);
         Console.WriteLine($"{userChoiceOfBook.title} by {userChoiceOfBook.author} has been returned.");
     }
     #endregion
@@ -333,7 +367,7 @@ public class BookHandling
 
 
     }
-    internal void PrintAllBooks()
+    internal void ListAllBooks()
     {
         DisplayBooks(allLibraryBooks);
         UI.PressAKeyToContinue();
@@ -406,7 +440,7 @@ public class Borrower
     public string FirstName { get; init; }
     public string LastName { get; init; }
     public long socialSecurityNumber { get; init; }
-    List<Book> borrowedBooks = new List<Book>();
+    public List<Book> borrowedBooks = new List<Book>();
 
     public Borrower(string firstName, string lastName, long socialSecurityNumber)
     {
@@ -452,35 +486,60 @@ public class Borrower
             message += "\nNo books in loan.";
         }
         else
-        foreach (Book book in borrowedBooks)
+            foreach (Book book in borrowedBooks)
             {
                 message += $"\n";
                 message += book.PrintOut();
             }
 
         return ($"Borrower: {this.FirstName} {this.LastName}, social security number: {this.socialSecurityNumber.ToString()} \n" + message);
-        
+
     }
 }
 
 public class BorrowerHandling
 {
-    List<Borrower> allLibraryBorrowers = new List<Borrower>()
+    List<Borrower> allLibraryBorrowers;
+    private DataRepository _dataRepository;
+
+    public BorrowerHandling(DataRepository dataRepository)
     {
-        new Borrower("Test", "Testare", 198705291410)
-    };
+        this.allLibraryBorrowers = dataRepository.LoadBorrowersFromFile();
+        this._dataRepository = dataRepository;
+    }
+
+    public void SaveCurrentStatusOfBorrowers()
+    {
+        _dataRepository.SaveBorrowersToFile(this.allLibraryBorrowers);
+    }
 
     #region Methods that handle borrowers in the library
     public void AddNewBorrower()
     {
         Console.WriteLine("You are about to add a new user.");
         Console.Write("Please enter borrowers first name:");
-        string firstName = Console.ReadLine();
+        string firstName = UI.GetInputWithCancel();
+        Console.WriteLine(); // To make a new line in console for better design.
+        if (firstName == null)
+        {
+            return; // User pressed 'esc', exit the method
+        }
         Console.Write("Please enter borrowers last name:");
-        string lastName = Console.ReadLine();
+        string lastName = UI.GetInputWithCancel();
+        Console.WriteLine(); // To make a new line in console for better design.
+        if (lastName == null)
+        {
+            return; // User pressed 'esc', exit the method
+        }
         long socialSecurityNumber = GetSocialSecurityNumber();
+        Console.WriteLine(); // To make a new line in console for better design.
 
-        if (BorrowerExist(socialSecurityNumber, out Borrower CurrentBorrower))
+        if (socialSecurityNumber == 0)
+        {
+            return; // User pressed 'esc' in the GetSocialSecurityNumber() which returned '0'
+        }
+
+        else if (BorrowerExist(socialSecurityNumber, out Borrower CurrentBorrower))
         {
             Console.WriteLine("A person with that social security number already exist.");
             Console.WriteLine("Please press a key to continue.");
@@ -506,11 +565,18 @@ public class BorrowerHandling
         while (!isValidInput)
         {
             Console.Write("Please enter borrowers social security number (12 digits):");
-            if (long.TryParse(Console.ReadLine(), out long userInput))
+            string userInput = UI.GetInputWithCancel();
+
+            if (userInput == null)
             {
-                if (Borrower.IsValidSocialSecurityNumber(userInput))
+                return 0; // User pressed 'esc', return 0 or any other action to indicate cancellation
+            }
+
+            if (long.TryParse(userInput, out long parsedUserInput))
+            {
+                if (Borrower.IsValidSocialSecurityNumber(parsedUserInput))
                 {
-                    socialSecurityNumber = userInput;
+                    socialSecurityNumber = parsedUserInput;
                     isValidInput = true;
                 }
                 else
@@ -552,11 +618,18 @@ public class BorrowerHandling
         {
             Console.WriteLine("Mathes found: \n");
 
-            //TODO SKAPA EN DISPLAY 
+            DisplayBorrower(foundBorrowers);
             UI.PressAKeyToContinue();
         }
     }
 
+    private void DisplayBorrower(List<Borrower> foundBorrowers)
+    {
+        for (int i = 0; i < foundBorrowers.Count; i++)
+        {
+            Console.WriteLine($"{i + 1}: {foundBorrowers[i].PrintOut()}");
+        }
+    }
     private List<Borrower> BorrowerSearch()
     {
         Console.Clear();
@@ -564,10 +637,16 @@ public class BorrowerHandling
         string searchWord = Console.ReadLine();
 
         List<Borrower> results = allLibraryBorrowers.
-            Where(borrower => borrower.FirstName.Contains(searchWord, StringComparison.OrdinalIgnoreCase) || 
+            Where(borrower => borrower.FirstName.Contains(searchWord, StringComparison.OrdinalIgnoreCase) ||
             borrower.LastName.Contains(searchWord, StringComparison.OrdinalIgnoreCase) ||
             borrower.socialSecurityNumber.ToString().Contains(searchWord, StringComparison.OrdinalIgnoreCase)).ToList();
         return results;
+    }
+
+    internal void ListAllBorrowers()
+    {
+        DisplayBorrower(allLibraryBorrowers);
+        UI.PressAKeyToContinue();
     }
     #endregion
 }
@@ -617,44 +696,13 @@ public class UI
                     ManageBorrowersMenu();
                     break;
                 case "6":
+                    bookLibrary.SaveCurrentStatusOfBooks();
+                    borrowerLibrary.SaveCurrentStatusOfBorrowers();
                     Environment.Exit(0);
                     break;
                 default:
                     Console.WriteLine("Invalid choice");
                     break;
-            }
-        }
-    }
-
-
-
-    private void AddItemMenu()
-    {
-        Console.Clear();
-        while (true)
-        {
-            
-            Console.WriteLine();
-            Console.WriteLine("Please choose an item to add:");
-            Console.WriteLine();
-            Console.WriteLine("1 - New borrower");
-            Console.WriteLine();
-            Console.WriteLine("2 - New book");
-            Console.WriteLine();
-            Console.WriteLine("3 - Return to main menu");
-
-            string userchoice = Console.ReadLine();
-
-            switch (userchoice)
-            {
-                case "1":
-                    borrowerLibrary.AddNewBorrower();
-                    break;
-                case "2":
-                    bookLibrary.AddNewBook();
-                    break;
-                case "3": return;
-                default: Console.WriteLine("Invalid choice"); break;
             }
         }
     }
@@ -684,7 +732,7 @@ public class UI
                     bookLibrary.FindABook();
                     break;
                 case "2":
-                    bookLibrary.PrintAllBooks();
+                    bookLibrary.ListAllBooks();
                     break;
                 case "3": return;
                 default: Console.WriteLine("Invalid choice"); break;
@@ -700,11 +748,11 @@ public class UI
             Console.WriteLine("Lend out a book menu");
             Console.WriteLine("====================================");
             Console.WriteLine();
-            Console.WriteLine("1. List all free books to loan");
+            Console.WriteLine("1 - Search for a free book to loan");
             Console.WriteLine();
-            Console.WriteLine("2. Search for a free book to loan");
+            Console.WriteLine("2 - List all free books to loan");
             Console.WriteLine();
-            Console.WriteLine("3. Return to main menu");
+            Console.WriteLine("3 - Return to main menu");
             Console.WriteLine();
             Console.WriteLine("====================================");
             ChooseAnOptionAndPressEnter();
@@ -714,10 +762,10 @@ public class UI
             switch (userchoice)
             {
                 case "1":
-                    bookLibrary.LoanABookFromAList();
+                    bookLibrary.SearchABookToLoan();
                     break;
                 case "2":
-                    bookLibrary.SearchABookToLoan();
+                    bookLibrary.LoanABookFromAList();
                     break;
                 case "3": return; ;
                 default: Console.WriteLine("Invalid choice"); break;
@@ -763,30 +811,33 @@ public class UI
     }
     private void ManageBooksMenu() // KLAR
     {
-        Console.WriteLine("====================================");
-        Console.WriteLine("Manage books menu");
-        Console.WriteLine("====================================");
-        Console.WriteLine();
-        Console.WriteLine("1 - Add a book to the library");
-        Console.WriteLine();
-        Console.WriteLine("2 - Return to main menu");
-        Console.WriteLine();
-        Console.WriteLine("====================================");
-        ChooseAnOptionAndPressEnter();
-
-        string userchoice = Console.ReadLine();
-
-        switch (userchoice)
+        while (true)
         {
-            case "1":
-                bookLibrary.AddNewBook();
-                break;
-            case "2": return;
-            default:
-                Console.WriteLine("Invalid choice"); break;
+            Console.WriteLine("====================================");
+            Console.WriteLine("Manage books menu");
+            Console.WriteLine("====================================");
+            Console.WriteLine();
+            Console.WriteLine("1 - Add a book to the library");
+            Console.WriteLine();
+            Console.WriteLine("2 - Return to main menu");
+            Console.WriteLine();
+            Console.WriteLine("====================================");
+            ChooseAnOptionAndPressEnter();
+
+            string userchoice = Console.ReadLine();
+
+            switch (userchoice)
+            {
+                case "1":
+                    bookLibrary.AddNewBook();
+                    break;
+                case "2": return;
+                default:
+                    Console.WriteLine("Invalid choice"); break;
+            }
         }
     }
-    private void ManageBorrowersMenu() //EJ KLAR
+    private void ManageBorrowersMenu()// KLAR
     {
         Console.Clear();
         while (true)
@@ -814,7 +865,7 @@ public class UI
                     borrowerLibrary.FindABorrower();
                     break;
                 case "2":
-                    //TODO: SKAPA METOD
+                    borrowerLibrary.ListAllBorrowers();
                     break;
                 case "3":
                     borrowerLibrary.AddNewBorrower();
@@ -824,7 +875,7 @@ public class UI
                     Console.WriteLine("Invalid choice"); break;
             }
         }
-    } // TODO: EJ KLAR
+    }
 
     private void ChooseAnOptionAndPressEnter()
     {
@@ -842,5 +893,78 @@ public class UI
         Console.ReadKey();
         Console.Clear();
     }
+
+    public static string GetInputWithCancel()
+    {
+        string input = "";
+        while (true)
+        {
+            ConsoleKeyInfo keyInfo = Console.ReadKey(true);
+
+            // Check for "esc" key press
+            if (keyInfo.Key == ConsoleKey.Escape)
+            {
+                Console.Clear();
+                return null; // or any other action to indicate cancellation
+            }
+            else if (keyInfo.Key == ConsoleKey.Enter)
+            {
+                break; // exit the loop when Enter key is pressed
+            }
+            else
+            {
+                input += keyInfo.KeyChar; // append the entered character to the input
+                Console.Write(keyInfo.KeyChar); // echo the character to the console
+            }
+        }
+
+        return input;
+    }
 }
 
+public class DataRepository
+{
+    private const string BorrowersFileName = "borrowers.json";
+    private const string BooksFileName = "books.json";
+
+    public void SaveBorrowersToFile(List<Borrower> borrowers)
+    {
+        var json = JsonConvert.SerializeObject(borrowers);
+        File.WriteAllText(BorrowersFileName, json);
+    }
+    public void SaveBooksToFile(List<Book> books)
+    {
+        var json = JsonConvert.SerializeObject(books);
+        File.WriteAllText(BooksFileName, json);
+    }
+
+    public List<Borrower> LoadBorrowersFromFile()
+    {
+        if (File.Exists(BorrowersFileName))
+        {
+            var json = File.ReadAllText(BorrowersFileName);
+            return JsonConvert.DeserializeObject<List<Borrower>>(json);
+        }
+        return new List<Borrower>()
+        {
+            new Borrower("Test", "Testare", 111111111111),
+            new Borrower("Test2", "Testare2", 222222222222)
+        };
+    }
+
+    public List<Book> LoadBooksFromFile()
+    {
+        if (File.Exists(BooksFileName))
+        {
+            var json = File.ReadAllText(BooksFileName);
+            return JsonConvert.DeserializeObject<List<Book>>(json);
+        }
+        return new List<Book>()
+        {
+            new Book("A Tale of Two Cities", "Charles Dickens", 1859),
+        new Book("The Little Prince", "Antoine de Saint-Exupéry", 1943),
+        new Book("The Lord of the Rings", "J.R.R. Tolkien", 1955),
+        new Book("Harry Potter and the Philosopher's Stone", "J. K. Rowling", 1997)
+        };
+    }
+}
