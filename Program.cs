@@ -1,28 +1,9 @@
-﻿/* Implementera följande funktioner:
- * [X] Lägg till nya böcker i bibliotek
- * [X] Låna ut böcker till låntagare
- * [X] Återlämna böcker
- * [X] Visa tillgängliga böcker
- * [X] Visa låntagare och deras lånade böcker
-
-Använd listor och/eller andra lämpliga datastrukturer/filer för att hantera samlingar av böcker och låntagare.
-
-Skapa ett användargränssnitt (konsol-baserat eller GUI) där bibliotekspersonal kan interagera med programmet och utföra ovanstående åtgärder. Skapa en användarvänlig och intuitiv design för användargränssnittet.
-
-Se till att programmet följer god praxis för objektorienterad programmering inklusive inkapsling och  arv.
-
-Testa programmet genom att låna ut och återlämna böcker samt visa korrekt information om tillgängliga böcker och låntagare.
-
-*/
-
-//TODO: hur implementerar vi arv?
-//TODO: att man kan komma ur val genom att t.ex. trycka på esc.
+﻿//TODO: hur implementerar vi arv?
 //TODO:Hantera exceptions och liknande
-//TODO: innan man lägger till bok eller låntagare, bekfräfta rätt uppgifter
-//TODO: lägg till en funktion som gör det möjligt att redigera uppgifter
+//TODO: innan man lägger till bok eller låntagare, bekfräfta rätt uppgifter NEJ
+//TODO: lägg till en funktion som gör det möjligt att redigera uppgifter NEJ
 //TODO: gå igenom att public, private, static osv är korrekt
 //TODO: lägg till kommentarer
-//TODO: lägg till console title
 
 // Kommentar till arv. Klassen borrower och book har flertal likheter, t.ex. metoden PrintOut() och sättet programmet spar ner data i Json format. Här ser jag en möjlighet att implementera ett interface
 // för att möjliggöra att båda klasserna delar på gemensamma metoder.
@@ -36,11 +17,8 @@ using System.Reflection.Metadata.Ecma335;
 using System.Runtime.InteropServices;
 using static System.Reflection.Metadata.BlobBuilder;
 
-
 List<Book> allLibraryBooks = new List<Book>();
 List<Borrower> allLibraryBorrowers = new List<Borrower>();
-
-
 DataRepository repository = new DataRepository();
 BorrowerHandling myBorrowerHandling = new BorrowerHandling(repository);
 BookHandling myBookHandling = new BookHandling(myBorrowerHandling, repository);
@@ -53,7 +31,9 @@ public class Book
     public string title;
     public string author;
     public int publishedYear;
-    public Borrower BorrowedTo { get; private set; } = null;
+
+    [JsonIgnore]
+    public Borrower BorrowedTo { get; set; } = null;
     public bool IsBorrowed { get; set; } = false;
 
     public Book(string titel, string author, int publishedYear)
@@ -73,8 +53,16 @@ public class Book
     }
     public void Return()
     {
-        BorrowedTo = null;
-        IsBorrowed = false;
+        if(BorrowedTo != null)
+        {
+            BorrowedTo.ReturnBook(this);
+            BorrowedTo = null; // Reset the BorrowedTo property since the book is returned
+        }
+        else
+        {
+            Console.WriteLine("Error: This book is not currently borrowed.");
+        }
+
     }
     /// <summary>
     /// Returns a string with the title, author, publishing year and availablity of the book
@@ -90,10 +78,9 @@ public class Book
         {
             bookStatus = "Free";
         }
-        //TODO: Snygga till formatet.
+
         return ($"{this.title}".PadRight(45) + $"{this.author}".PadRight(30) + $"{this.publishedYear}".PadRight(15) + $"{bookStatus}");
 
-        //Console.WriteLine("Nr".PadRight(5) + "Title".PadRight(20) + "Author".PadRight(20) + "Published year");
     }
 }
 
@@ -356,13 +343,17 @@ public class BookHandling
             selectedBook.BorrowBook(currentBorrower);
             currentBorrower.borrowedBooks.Add(selectedBook);
             Console.WriteLine();
+            Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine($"{selectedBook.title} has been borrowed by {currentBorrower.FirstName} {currentBorrower.LastName}.");
+            Console.ResetColor();
             UI.PressAKeyToContinue();
         }
         else
         {
             Console.WriteLine();
+            Console.ForegroundColor = ConsoleColor.Red;
             Console.WriteLine("Borrower not found or not valid. Please create a valid borrower first.");
+            Console.ResetColor();
             UI.PressAKeyToContinue();
         }
     }
@@ -374,7 +365,6 @@ public class BookHandling
         List<Book> listOfBorrowedBooks = ListAllBorrowedBooks();
         HandleReturningABook(listOfBorrowedBooks);
     }
-
     internal void SearchABookToReturn()
     {
         List<Book> listOfBooks = BookSearch();
@@ -408,10 +398,12 @@ public class BookHandling
             return;
         }
 
-        Borrower currentBorrower = userChoiceOfBook.BorrowedTo;
         userChoiceOfBook.Return();
-        currentBorrower.borrowedBooks.Remove(userChoiceOfBook);
+        
+        Console.WriteLine();
+        Console.ForegroundColor = ConsoleColor.Green;
         Console.WriteLine($"{userChoiceOfBook.title} by {userChoiceOfBook.author} has been returned.");
+        Console.ResetColor();
         UI.PressAKeyToContinue();
     }
     #endregion
@@ -559,6 +551,20 @@ public class Borrower
         return false;
     }
 
+    public void ReturnBook(Book returnedBook)
+    {
+        // Check if the book is in the borrowedBooks list
+        if (borrowedBooks.Contains(returnedBook))
+        {
+            // Remove the returned book from the borrowedBooks list
+            borrowedBooks.Remove(returnedBook);
+        }
+        else
+        {
+            Console.WriteLine("Error: This book is not in the borrower's list of borrowed books.");
+        }
+    }
+
     public string PrintOut()
     {
         /*string message = "Books in loan:";
@@ -580,7 +586,7 @@ public class Borrower
 
 public class BorrowerHandling
 {
-    List<Borrower> allLibraryBorrowers;
+    public List<Borrower> allLibraryBorrowers;
     private DataRepository _dataRepository;
 
     public BorrowerHandling(DataRepository dataRepository)
@@ -627,18 +633,20 @@ public class BorrowerHandling
 
         else if (BorrowerExist(socialSecurityNumber, out Borrower CurrentBorrower))
         {
+            Console.WriteLine();
+            Console.ForegroundColor = ConsoleColor.Red;
             Console.WriteLine("A person with that social security number already exist.");
-            Console.WriteLine("Please press a key to continue.");
-            Console.ReadKey();
-            Console.Clear();
+            Console.ResetColor();
+            UI.PressAKeyToContinue();
         }
         else
         {
             allLibraryBorrowers.Add(new Borrower(firstName, lastName, socialSecurityNumber)); // Creates a new user and adds it to the list of Borrowers.
+            Console.ForegroundColor = ConsoleColor.Green;
+            Console.WriteLine();
             Console.WriteLine($"{firstName} {lastName} added as a borrower to the library.");
-            Console.WriteLine("Please press a key to continue.");
-            Console.ReadKey();
-            Console.Clear();
+            Console.ResetColor();
+            UI.PressAKeyToContinue();
 
         }
 
@@ -696,9 +704,10 @@ public class BorrowerHandling
     {
         List<Borrower> foundBorrowers = BorrowerSearch();
         Console.Title = "Borrower search result";
-        if (foundBorrowers == null)
+        if (foundBorrowers.Count == 0)
         {
             Console.WriteLine("No mathes found");
+            UI.PressAKeyToContinue();
         }
         else
         {
@@ -718,7 +727,7 @@ public class BorrowerHandling
             Console.WriteLine();
             if (foundBorrowers[i].borrowedBooks.Count > 0)
             {
-                Console.WriteLine($"\tBorrowed books: ");
+                Console.WriteLine($" Borrowed books: ");
                 Console.WriteLine();
                 Console.ForegroundColor = ConsoleColor.Blue;
                 Console.WriteLine("Title".PadRight(45) + "Author".PadRight(30) + "Published".PadRight(15) + "Loan status");
@@ -730,10 +739,10 @@ public class BorrowerHandling
             }
             else
             {
-                Console.WriteLine($"\tNo borrowed books.");
+                Console.WriteLine($" No borrowed books.");
             }
             Console.WriteLine();
-            Console.WriteLine("================================================================================");
+            Console.WriteLine("==========================================================================================");
             Console.WriteLine();
         }
     }
@@ -759,6 +768,56 @@ public class BorrowerHandling
     }
     #endregion
 }
+
+
+public class DataRepository
+{
+    private const string BorrowersFileName = "borrowers.json";
+    private const string BooksFileName = "books.json";
+
+    public void SaveBorrowersToFile(List<Borrower> borrowers)
+    {
+        var json = JsonConvert.SerializeObject(borrowers);
+        File.WriteAllText(BorrowersFileName, json);
+    }
+    public void SaveBooksToFile(List<Book> books)
+    {
+        var json = JsonConvert.SerializeObject(books);
+        File.WriteAllText(BooksFileName, json);
+    }
+
+    public List<Borrower> LoadBorrowersFromFile()
+    {
+        if (File.Exists(BorrowersFileName))
+        {
+            var json = File.ReadAllText(BorrowersFileName);
+            return JsonConvert.DeserializeObject<List<Borrower>>(json);
+        }
+        return new List<Borrower>()
+        {
+            new Borrower("Test", "Testare", 111111111111),
+            new Borrower("Test2", "Testare2", 222222222222),
+            new Borrower("Henri", "Lehtonen", 198705291111)
+        };
+    }
+
+    public List<Book> LoadBooksFromFile()
+    {
+        if (File.Exists(BooksFileName))
+        {
+            var json = File.ReadAllText(BooksFileName);
+            return JsonConvert.DeserializeObject<List<Book>>(json);
+        }
+        return new List<Book>()
+        {
+            new Book("A Tale of Two Cities", "Charles Dickens", 1859),
+        new Book("The Little Prince", "Antoine de Saint-Exupéry", 1943),
+        new Book("The Lord of the Rings", "J.R.R. Tolkien", 1955),
+        new Book("Harry Potter and the Philosopher's Stone", "J. K. Rowling", 1997)
+        };
+    }
+}
+
 public class UI
 {
     private BookHandling bookLibrary;
@@ -903,11 +962,11 @@ public class UI
             Console.WriteLine("Return a book menu");
             Console.WriteLine("====================================");
             Console.WriteLine();
-            Console.WriteLine("1. Show a list of all lend out books");
+            Console.WriteLine("1 - Search for a book to return");
             Console.WriteLine();
-            Console.WriteLine("2. Search for a book to return");
+            Console.WriteLine("2 - Show a list of all lend out books");
             Console.WriteLine();
-            Console.WriteLine("3. Return to main menu");
+            Console.WriteLine("3 - Return to main menu");
             Console.WriteLine();
             Console.WriteLine("====================================");
             ChooseAnOptionAndPressEnter();
@@ -917,10 +976,10 @@ public class UI
             switch (userchoice)
             {
                 case "1":
-                    bookLibrary.ReturnABookFromAList();
+                    bookLibrary.SearchABookToReturn();
                     break;
                 case "2":
-                    bookLibrary.SearchABookToReturn();
+                    bookLibrary.ReturnABookFromAList();
                     break;
                 case "3": return; ;
                 default: Console.WriteLine("Invalid choice"); break;
@@ -1056,53 +1115,5 @@ public class UI
         }
 
         return input;
-    }
-}
-
-public class DataRepository
-{
-    private const string BorrowersFileName = "borrowers.json";
-    private const string BooksFileName = "books.json";
-
-    public void SaveBorrowersToFile(List<Borrower> borrowers)
-    {
-        var json = JsonConvert.SerializeObject(borrowers);
-        File.WriteAllText(BorrowersFileName, json);
-    }
-    public void SaveBooksToFile(List<Book> books)
-    {
-        var json = JsonConvert.SerializeObject(books);
-        File.WriteAllText(BooksFileName, json);
-    }
-
-    public List<Borrower> LoadBorrowersFromFile()
-    {
-        if (File.Exists(BorrowersFileName))
-        {
-            var json = File.ReadAllText(BorrowersFileName);
-            return JsonConvert.DeserializeObject<List<Borrower>>(json);
-        }
-        return new List<Borrower>()
-        {
-            new Borrower("Test", "Testare", 111111111111),
-            new Borrower("Test2", "Testare2", 222222222222),
-            new Borrower("Henri", "Lehtonen", 198705291111)
-        };
-    }
-
-    public List<Book> LoadBooksFromFile()
-    {
-        if (File.Exists(BooksFileName))
-        {
-            var json = File.ReadAllText(BooksFileName);
-            return JsonConvert.DeserializeObject<List<Book>>(json);
-        }
-        return new List<Book>()
-        {
-            new Book("A Tale of Two Cities", "Charles Dickens", 1859),
-        new Book("The Little Prince", "Antoine de Saint-Exupéry", 1943),
-        new Book("The Lord of the Rings", "J.R.R. Tolkien", 1955),
-        new Book("Harry Potter and the Philosopher's Stone", "J. K. Rowling", 1997)
-        };
     }
 }
