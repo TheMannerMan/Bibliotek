@@ -31,35 +31,40 @@ public class Book
     public string title;
     public string author;
     public int publishedYear;
+    public int bookID;
+    public string borrowedBy = null;
 
     public bool IsBorrowed { get; set; } = false;
 
-    public Book(string titel, string author, int publishedYear)
+    public Book(string titel, string author, int publishedYear, int bookID)
     {
         this.title = titel;
         this.author = author;
         this.publishedYear = publishedYear;
+        this.bookID = bookID;
     }
 
-    public void BorrowBook(Borrower borrower)
+    public void BorrowBook(string nameOfBorrower)
     {
         if (!IsBorrowed)
         {
-            BorrowedTo = borrower;
             IsBorrowed = true;
+            borrowedBy = nameOfBorrower;
         }
     }
     public void Return()
     {
-        if(BorrowedTo != null)
+       if(IsBorrowed != false)
         {
-            BorrowedTo.ReturnBook(this);
-            BorrowedTo = null; // Reset the BorrowedTo property since the book is returned
+            IsBorrowed = false;
+            borrowedBy = null;
         }
-        else
+       else
         {
             Console.WriteLine("Error: This book is not currently borrowed.");
         }
+
+
 
     }
     /// <summary>
@@ -70,14 +75,14 @@ public class Book
         string bookStatus;
         if (this.IsBorrowed == true)
         {
-            bookStatus = "On loan";
+            bookStatus = $"On loan by {borrowedBy}";
         }
         else
         {
             bookStatus = "Free";
         }
 
-        return ($"{this.title}".PadRight(45) + $"{this.author}".PadRight(30) + $"{this.publishedYear}".PadRight(15) + $"{bookStatus}");
+        return ($"{this.title}".PadRight(45) + $"{this.author}".PadRight(30) + $"{this.publishedYear}".PadRight(15) + $"{this.bookID}".PadRight(15) + $"{bookStatus}");
 
     }
 }
@@ -223,7 +228,8 @@ public class BookHandling
             {
                 if (ValidDate(parsedYear))
                 {
-                    allLibraryBooks.Add(new Book(userInputTitle, userInputAuthor, parsedYear));
+                    int nextBookID = allLibraryBooks.Count + 1; // The first ID is 1. So to get the next free ID, look how many book there are and add +1. Example: if there is 2 book. allLibraryBooks.Count + 1 => 2 + 1 => 3 
+                    allLibraryBooks.Add(new Book(userInputTitle, userInputAuthor, parsedYear, nextBookID));
                     Console.WriteLine();
                     Console.WriteLine($"{userInputTitle} by {userInputAuthor} has been added to the library.");
                     UI.PressAKeyToContinue();
@@ -338,11 +344,13 @@ public class BookHandling
         long socialSecurityNumber = BorrowerHandling.GetSocialSecurityNumber();
         if (borrowerHandling.BorrowerExist(socialSecurityNumber, out Borrower currentBorrower))
         {
-            selectedBook.BorrowBook(currentBorrower);
-            currentBorrower.borrowedBooks.Add(selectedBook);
+            string fullNameOfBorrower = $"{currentBorrower.FirstName} {currentBorrower.LastName}";
+            int idOfBook = selectedBook.bookID;
+            selectedBook.BorrowBook(fullNameOfBorrower);
+            currentBorrower.borrowedBooksByID.Add(idOfBook);
             Console.WriteLine();
             Console.ForegroundColor = ConsoleColor.Green;
-            Console.WriteLine($"{selectedBook.title} has been borrowed by {currentBorrower.FirstName} {currentBorrower.LastName}.");
+            Console.WriteLine($"{selectedBook.title} has been borrowed by {fullNameOfBorrower}.");
             Console.ResetColor();
             UI.PressAKeyToContinue();
         }
@@ -397,7 +405,28 @@ public class BookHandling
         }
 
         userChoiceOfBook.Return();
-        
+        //TODO: HÄR ÄR JAG OSÄKER OM RÄTT. KOM tillbaka och kontrollera om det inte funkar
+        foreach (Borrower borrower in borrowerHandling.allLibraryBorrowers)
+        {
+            // Create a copy of the list to avoid modifying it while iterating
+            List<int> booksToRemove = new List<int>();
+
+            foreach (int bookID in borrower.borrowedBooksByID)
+            {
+                if (bookID == userChoiceOfBook.bookID)
+                {
+                    // Add the book ID to the list of books to remove
+                    booksToRemove.Add(bookID);
+                }
+            }
+
+            // Remove the books outside of the inner loop
+            foreach (int bookIDToRemove in booksToRemove)
+            {
+                borrower.borrowedBooksByID.Remove(bookIDToRemove);
+            }
+        }
+
         Console.WriteLine();
         Console.ForegroundColor = ConsoleColor.Green;
         Console.WriteLine($"{userChoiceOfBook.title} by {userChoiceOfBook.author} has been returned.");
@@ -439,7 +468,7 @@ public class BookHandling
     {
         Console.Clear();
         Console.ForegroundColor = ConsoleColor.Blue;
-        Console.WriteLine("Nr".PadRight(5) + "Title".PadRight(45) + "Author".PadRight(30) + "Published".PadRight(15) + "Loan status");
+        Console.WriteLine("Nr".PadRight(5) + "Title".PadRight(45) + "Author".PadRight(30) + "Published".PadRight(15) + "Book ID".PadRight(15)+ "Loan status");
         Console.ResetColor(); // Reset the color to the default
         for (int i = 0; i < books.Count; i++)
         {
@@ -511,7 +540,7 @@ public class Borrower
     public string FirstName { get; init; }
     public string LastName { get; init; }
     public long socialSecurityNumber { get; init; }
-    public List<Book> borrowedBooks = new List<Book>();
+    public List<int> borrowedBooksByID = new List<int>();
 
     public Borrower(string firstName, string lastName, long socialSecurityNumber)
     {
@@ -549,18 +578,9 @@ public class Borrower
         return false;
     }
 
-    public void ReturnBook(Book returnedBook)
+    public void ReturnBook()
     {
-        // Check if the book is in the borrowedBooks list
-        if (borrowedBooks.Contains(returnedBook))
-        {
-            // Remove the returned book from the borrowedBooks list
-            borrowedBooks.Remove(returnedBook);
-        }
-        else
-        {
-            Console.WriteLine("Error: This book is not in the borrower's list of borrowed books.");
-        }
+        
     }
 
     public string PrintOut()
@@ -723,17 +743,16 @@ public class BorrowerHandling
         {
             Console.WriteLine($"{i + 1}: {foundBorrowers[i].PrintOut()}");
             Console.WriteLine();
-            if (foundBorrowers[i].borrowedBooks.Count > 0)
+            if (foundBorrowers[i].borrowedBooksByID.Count > 0)
             {
                 Console.WriteLine($" Borrowed books: ");
                 Console.WriteLine();
                 Console.ForegroundColor = ConsoleColor.Blue;
                 Console.WriteLine("Title".PadRight(45) + "Author".PadRight(30) + "Published".PadRight(15) + "Loan status");
                 Console.ResetColor(); // Reset the color to the default
-                for (int j = 0; j < foundBorrowers[i].borrowedBooks.Count; j++)
-                {
-                    Console.WriteLine($"{foundBorrowers[i].borrowedBooks[j].PrintOut()}");
-                }
+
+                //TODO: LÄGG TILL EN LOOP SOM LOOPAR BÖCKERNA HÄR
+
             }
             else
             {
@@ -808,10 +827,10 @@ public class DataRepository
         }
         return new List<Book>()
         {
-            new Book("A Tale of Two Cities", "Charles Dickens", 1859),
-        new Book("The Little Prince", "Antoine de Saint-Exupéry", 1943),
-        new Book("The Lord of the Rings", "J.R.R. Tolkien", 1955),
-        new Book("Harry Potter and the Philosopher's Stone", "J. K. Rowling", 1997)
+        new Book("A Tale of Two Cities", "Charles Dickens", 1859, 1),
+        new Book("The Little Prince", "Antoine de Saint-Exupéry", 1943, 2),
+        new Book("The Lord of the Rings", "J.R.R. Tolkien", 1955, 3),
+        new Book("Harry Potter and the Philosopher's Stone", "J. K. Rowling", 1997, 4)
         };
     }
 }
