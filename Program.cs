@@ -32,8 +32,6 @@ public class Book
     public string author;
     public int publishedYear;
 
-    [JsonIgnore]
-    public Borrower BorrowedTo { get; set; } = null;
     public bool IsBorrowed { get; set; } = false;
 
     public Book(string titel, string author, int publishedYear)
