@@ -54,12 +54,12 @@ public class Book
     }
     public void Return()
     {
-       if(IsBorrowed != false)
+        if (IsBorrowed != false)
         {
             IsBorrowed = false;
             borrowedBy = null;
         }
-       else
+        else
         {
             Console.WriteLine("Error: This book is not currently borrowed.");
         }
@@ -468,7 +468,7 @@ public class BookHandling
     {
         Console.Clear();
         Console.ForegroundColor = ConsoleColor.Blue;
-        Console.WriteLine("Nr".PadRight(5) + "Title".PadRight(45) + "Author".PadRight(30) + "Published".PadRight(15) + "Book ID".PadRight(15)+ "Loan status");
+        Console.WriteLine("Nr".PadRight(5) + "Title".PadRight(45) + "Author".PadRight(30) + "Published".PadRight(15) + "Book ID".PadRight(15) + "Loan status");
         Console.ResetColor(); // Reset the color to the default
         for (int i = 0; i < books.Count; i++)
         {
@@ -580,24 +580,13 @@ public class Borrower
 
     public void ReturnBook()
     {
-        
+
     }
 
     public string PrintOut()
     {
-        /*string message = "Books in loan:";
-        if (borrowedBooks.Count == 0)
-        {
-            message += "\nNo books in loan.";
-        }
-        else
-            /*foreach (Book book in borrowedBooks)
-            {
-                message += $"\n";
-                message += book.PrintOut();
-            }*/
 
-        return ($"Borrower: {this.FirstName} {this.LastName}, social security number: {this.socialSecurityNumber.ToString()}");
+        return ($"{this.FirstName} {this.LastName}, SSN: {this.socialSecurityNumber.ToString()}");
 
     }
 }
@@ -718,7 +707,7 @@ public class BorrowerHandling
         return false;
     }
 
-    internal void FindABorrower()
+    internal void FindABorrower(BookHandling bookLibrary)
     {
         List<Borrower> foundBorrowers = BorrowerSearch();
         Console.Title = "Borrower search result";
@@ -731,32 +720,51 @@ public class BorrowerHandling
         {
             Console.WriteLine("Mathes found: \n");
 
-            DisplayBorrower(foundBorrowers);
+            DisplayBorrower(foundBorrowers, bookLibrary);
             UI.PressAKeyToContinue();
         }
     }
 
-    private void DisplayBorrower(List<Borrower> foundBorrowers)
+    private void DisplayBorrower(List<Borrower> foundBorrowers, BookHandling bookLibrary)
     {
         Console.Clear();
         for (int i = 0; i < foundBorrowers.Count; i++)
         {
-            Console.WriteLine($"{i + 1}: {foundBorrowers[i].PrintOut()}");
+            Console.WriteLine($"{foundBorrowers[i].PrintOut()}");
             Console.WriteLine();
             if (foundBorrowers[i].borrowedBooksByID.Count > 0)
             {
-                Console.WriteLine($" Borrowed books: ");
+                Console.WriteLine("Borrowed books: ");
                 Console.WriteLine();
                 Console.ForegroundColor = ConsoleColor.Blue;
-                Console.WriteLine("Title".PadRight(45) + "Author".PadRight(30) + "Published".PadRight(15) + "Loan status");
+                Console.WriteLine("Title".PadRight(45) + "Author".PadRight(30) + "Published".PadRight(15) + "Book ID".PadRight(15)+ "Loan status");
                 Console.ResetColor(); // Reset the color to the default
 
                 //TODO: LÄGG TILL EN LOOP SOM LOOPAR BÖCKERNA HÄR
+                List<Book> booksToPrint = new List<Book>();
 
+                foreach (int bookID in foundBorrowers[i].borrowedBooksByID)
+                {
+                    int intToControll = bookID;
+                    foreach (Book book in bookLibrary.allLibraryBooks)
+                    {
+                        if (book.bookID == intToControll)
+                        {
+                            booksToPrint.Add(book);
+                        }
+                    }
+                }
+                
+                foreach (Book book in booksToPrint)
+                {
+                    Console.WriteLine(book.PrintOut());
+                }
             }
+
+
             else
             {
-                Console.WriteLine($" No borrowed books.");
+                Console.WriteLine("No borrowed books.");
             }
             Console.WriteLine();
             Console.WriteLine("==========================================================================================");
@@ -777,10 +785,10 @@ public class BorrowerHandling
         return results;
     }
 
-    internal void ListAllBorrowers()
+    internal void ListAllBorrowers(BookHandling bookLibrary)
     {
         Console.Title = "All library borrowers";
-        DisplayBorrower(allLibraryBorrowers);
+        DisplayBorrower(allLibraryBorrowers, bookLibrary);
         UI.PressAKeyToContinue();
     }
     #endregion
@@ -1062,10 +1070,10 @@ public class UI
             switch (userchoice)
             {
                 case "1":
-                    borrowerLibrary.FindABorrower();
+                    borrowerLibrary.FindABorrower(bookLibrary);
                     break;
                 case "2":
-                    borrowerLibrary.ListAllBorrowers();
+                    borrowerLibrary.ListAllBorrowers(bookLibrary);
                     break;
                 case "3":
                     borrowerLibrary.AddNewBorrower();
