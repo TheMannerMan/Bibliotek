@@ -271,19 +271,30 @@ public class UI
         Console.Clear();
     }
 
+    /// <summary>
+    /// Reads input from the user, allowing cancellation by pressing the "Esc" key.
+    /// Supports backspace to delete the last character and Enter to submit the input.
+    /// </summary>
+    /// <returns>The entered input as a string or null if the operation was canceled.</returns>
     public static string GetInputWithCancel()
     {
+        // Initialize an empty string to store user input
         string input = "";
+
+        // Continue reading input until Enter och ESC key is pressed
         while (true)
         {
+            // Read a key without displaying it on the console
             ConsoleKeyInfo keyInfo = Console.ReadKey(true);
 
             // Check for "esc" key press
             if (keyInfo.Key == ConsoleKey.Escape)
             {
                 Console.Clear();
-                return null; // or any other action to indicate cancellation
+                return null; // Indicate cancellation by returning null
             }
+
+            // Check for backspace key press
             else if (keyInfo.Key == ConsoleKey.Backspace)
             {
                 // Handle backspace: remove the last character from input
@@ -293,6 +304,8 @@ public class UI
                     Console.Write("\b \b"); // move the cursor back and erase the character
                 }
             }
+
+            // Check for Enter key press
             else if (keyInfo.Key == ConsoleKey.Enter)
             {
                 break; // exit the loop when Enter key is pressed
@@ -304,6 +317,6 @@ public class UI
             }
         }
 
-        return input;
+        return input; // Return the entered input as a string
     }
 }
