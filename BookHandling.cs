@@ -433,7 +433,7 @@
         // Retrieve a list of books based on user search criteria.
         List<Book> foundBooks = BookSearch();
 
-        //If user cancelled the book search, BookSearch return null. Thereby cancel this method.
+        //If user cancelled the book search, BookSearch return null. Thereby exit this method.
         if (foundBooks == null)
         {
             return;
@@ -501,16 +501,15 @@
         //TODO: Fortsätt här. Ändra så att du hämtar sökord via metod med felhantering
 
         //Prompt the user to enter a search word.
+
+        
         Console.WriteLine("Please enter a search word:");
         string searchWord = UI.GetInputWithCancel();
         
         if (searchWord == null)
         {
-            return null; // User pressed 'esc', return 0 or any other action to indicate cancellation
+            return null; // User pressed 'esc', return nullto indicate cancellation
         }
-
-        //Console.WriteLine("Searchword:");
-        //string searchWord = Console.ReadLine();
 
         // Filter the library books based on the search word, ignoring case.
         List<Book> results = allLibraryBooks.

@@ -5,9 +5,9 @@
 public class Book
 {
     //Properties for the book
-    public string Title { get; }
-    public string Author { get; }
-    public int bookID { get; } // Unique ID for the book
+    public string Title { get; set; }
+    public string Author { get; set; }
+    public int bookID { get; set; } // Unique ID for the book
     public bool IsBorrowed { get; private set; } = false; // Property to check if the book is borrowed or not
 
     //Fields for the book
