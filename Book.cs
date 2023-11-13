@@ -8,10 +8,10 @@ public class Book
     public string Title { get; set; }
     public string Author { get; set; }
     public int bookID { get; set; } // Unique ID for the book
+    public int PublishedYear { get; set; }
     public bool IsBorrowed { get; private set; } = false; // Property to check if the book is borrowed or not
 
     //Fields for the book
-    private readonly int publishedYear;
     private string borrowedBy = null; // Name of the borrower (null if not borrowed)
 
     // Constructor to create a new book with specified attributes
@@ -19,7 +19,7 @@ public class Book
     {
         this.Title = titel;
         this.Author = author;
-        this.publishedYear = publishedYear;
+        this.PublishedYear = publishedYear;
         this.bookID = bookID;
     }
 
@@ -71,7 +71,7 @@ public class Book
             bookStatus = "Free";
         }
         // Format and return the book information as a string
-        return ($"{this.Title}".PadRight(45) + $"{this.Author}".PadRight(30) + $"{this.publishedYear}".PadRight(15) + $"{this.bookID}".PadRight(15) + $"{bookStatus}");
+        return ($"{this.Title}".PadRight(45) + $"{this.Author}".PadRight(30) + $"{this.PublishedYear}".PadRight(15) + $"{this.bookID}".PadRight(15) + $"{bookStatus}");
 
     }
 }

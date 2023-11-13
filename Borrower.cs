@@ -1,22 +1,37 @@
-﻿//TODO: hur implementerar vi arv?
-//TODO:Hantera exceptions och liknande
-//TODO: innan man lägger till bok eller låntagare, bekfräfta rätt uppgifter NEJ
-//TODO: lägg till en funktion som gör det möjligt att redigera uppgifter NEJ
-//TODO: gå igenom att public, private, static osv är korrekt
-//TODO: lägg till kommentarer
+﻿using System.Globalization;
 
-// Kommentar till arv. Klassen borrower och book har flertal likheter, t.ex. metoden PrintOut() och sättet programmet spar ner data i Json format. Här ser jag en möjlighet att implementera ett interface
-// för att möjliggöra att båda klasserna delar på gemensamma metoder.
-
-using System.Globalization;
-
+/// <summary>
+/// Represents a borrower in the library system with basic information and a list of borrowed books.
+/// </summary>
 public class Borrower
 {
+    /// <summary>
+    /// Represents a borrower in the library system with basic information and a list of borrowed books.
+    /// </summary>
     public string FirstName { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the last name of the borrower.
+    /// </summary>
     public string LastName { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the social security number of the borrower.
+    /// </summary>
     public long socialSecurityNumber { get; init; }
+
+    //VARFÖR INGEN REFERENS NÄR DEN BÖR HA DET?? Den finns t.ex. i DisplayBorrower()-metoden i BorrowerHandling-klassen.
+    /// <summary>
+    /// Gets a list of book IDs that the borrower has borrowed.
+    /// </summary>
     public List<int> borrowedBooksByID = new List<int>();
 
+    /// <summary>
+    /// Initializes a new instance of the Borrower class with provided information.
+    /// </summary>
+    /// <param name="firstName">The first name of the borrower.</param>
+    /// <param name="lastName">The last name of the borrower.</param>
+    /// <param name="socialSecurityNumber">The social security number of the borrower.</param>
     public Borrower(string firstName, string lastName, long socialSecurityNumber)
     {
         FirstName = firstName;
@@ -25,27 +40,33 @@ public class Borrower
     }
 
     /// <summary>
-    /// Takes a number and controlls if is valid. Returns true if valid social security number.
+    /// Validates if the given social security number is in a valid format and represents a reasonable birthdate.
     /// </summary>
-    /// <param name="socialSecurityNumber"></param>
-    /// <returns></returns>
+    /// <param name="socialSecurityNumber">The social security number to validate.</param>
+    /// <returns>True if the social security number is valid; otherwise, false.</returns>
     public static bool IsValidSocialSecurityNumber(long socialSecurityNumber)
     {
+        //Converts the int number to a string.
+        string ssnString = socialSecurityNumber.ToString();
 
-        string ssnString = socialSecurityNumber.ToString(); //Converts the int number to a string.
-        if (!(ssnString.Length == 12)) // Validates that the number is 12 digits
+        // Validates that the number is 12 digits
+        if (!(ssnString.Length == 12))
         {
             return false;
         }
-        ssnString = ssnString.Substring(0, 8); // Removes the 4 last digits.
 
-        DateTime parsedDate; //Var that saves a successfully converted DateTime
+        // Removes the 4 last digits.
+        ssnString = ssnString.Substring(0, 8);
+
+        // Validates if the string can be converted to a DateTime.
+        DateTime parsedDate;
         if (!(DateTime.TryParseExact(ssnString, "yyyyMMdd", CultureInfo.InvariantCulture, DateTimeStyles.None, out parsedDate))) // Validates if the string can be converted to a string.
         {
             return false;
         }
 
-        if ((parsedDate < DateTime.Now) && (parsedDate > new DateTime(1900, 01, 01))) // Validates that the given birthday is not in the future and within reasoneble time.
+        // Validates that the given birthday is not in the future and within reasonable time.
+        if ((parsedDate < DateTime.Now) && (parsedDate > new DateTime(1900, 01, 01)))
         {
             return true;
         }
@@ -53,11 +74,10 @@ public class Borrower
         return false;
     }
 
-    public void ReturnBook()
-    {
-
-    }
-
+    /// <summary>
+    /// Generates a formatted string representing the borrower's information.
+    /// </summary>
+    /// <returns>A formatted string with the borrower's name and social security number.</returns>
     public string PrintOut()
     {
 

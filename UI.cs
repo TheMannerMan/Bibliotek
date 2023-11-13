@@ -1,27 +1,37 @@
-﻿//TODO: hur implementerar vi arv?
-//TODO:Hantera exceptions och liknande
-//TODO: innan man lägger till bok eller låntagare, bekfräfta rätt uppgifter NEJ
-//TODO: lägg till en funktion som gör det möjligt att redigera uppgifter NEJ
-//TODO: gå igenom att public, private, static osv är korrekt
-//TODO: lägg till kommentarer
-
-// Kommentar till arv. Klassen borrower och book har flertal likheter, t.ex. metoden PrintOut() och sättet programmet spar ner data i Json format. Här ser jag en möjlighet att implementera ett interface
-// för att möjliggöra att båda klasserna delar på gemensamma metoder.
-
+﻿/// <summary>
+/// The UI class handles the user interface and menu navigation for the library management system.
+/// </summary>
 public class UI
 {
+    /// <summary>
+    /// The BookHandling instance for managing book-related operations in the library.
+    /// </summary>
     private BookHandling bookLibrary;
+
+    /// <summary>
+    /// The BorrowerHandling instance for managing borrower-related operations in the library.
+    /// </summary>
     private BorrowerHandling borrowerLibrary;
 
+    /// <summary>
+    /// Initializes a new instance of the UI class with references to BookHandling and BorrowerHandling instances.
+    /// </summary>
+    /// <param name="bookLibrary">The BookHandling instance for managing books.</param>
+    /// <param name="borrowerLibrary">The BorrowerHandling instance for managing borrowers.</param>
     public UI(BookHandling bookLibrary, BorrowerHandling borrowerLibrary)
     {
         this.bookLibrary = bookLibrary;
         this.borrowerLibrary = borrowerLibrary;
     }
 
-    public void MainMenu() // TESTAD OCH DESIGNAD
+    /// <summary>
+    /// Displays the main menu and handles user choices for library management.
+    /// </summary>
+    public void MainMenu()
     {
         Console.Title = "Main Menu";
+
+        // Main menu loop
         while (true)
         {
             Console.Clear();
@@ -67,9 +77,11 @@ public class UI
             }
         }
     }
+    /// <summary>
+    /// Displays the search options for finding a book.
+    /// </summary>
     private void SearchABookMenu()
     {
-
 
         while (true)
         {
@@ -103,8 +115,11 @@ public class UI
                 default: break;
             }
         }
-    } // TESTAD OCH DESIGNAD
-    private void LoanBookMenu() // TESTAD OCH DESIGNAD
+    }
+    /// <summary>
+/// Displays the options for lending out books.
+/// </summary>
+    private void LoanBookMenu()
     {
 
         while (true)
@@ -138,12 +153,13 @@ public class UI
                 default: break;
             }
         }
-
-
     }
-    private void ReturnBookMenu() // TESTAD OCH DESIGNAD
-    {
 
+    /// <summary>
+    /// Displays the options for returning books.
+    /// </summary>
+    private void ReturnBookMenu()
+    {
         while (true)
         {
             Console.Clear();
@@ -175,10 +191,12 @@ public class UI
                 default: Console.WriteLine("Invalid choice"); break;
             }
         }
-
-
     }
-    private void ManageBooksMenu() // TESTAD OCH DESIGNAD
+
+    /// <summary>
+    /// Displays the options for managing books, allowing the user to add a new book or return to the main menu.
+    /// </summary>
+    private void ManageBooksMenu()
     {
         while (true)
         {
@@ -208,9 +226,13 @@ public class UI
             }
         }
     }
-    private void ManageBorrowersMenu()// TESTAD OCH DESIGNAD
-    {
 
+    /// <summary>
+    /// Displays the options for managing borrowers, allowing the user to search for a borrower, list all borrowers,
+    /// add a new borrower to the library, or return to the main menu.
+    /// </summary>
+    private void ManageBorrowersMenu()
+    {
         while (true)
         {
             Console.Clear();
@@ -250,6 +272,9 @@ public class UI
         }
     }
 
+    /// <summary>
+    /// Displays a message prompting the user to choose an option.
+    /// </summary>
     private void ChooseAnOptionAndPressEnter()
     {
         Console.WriteLine();

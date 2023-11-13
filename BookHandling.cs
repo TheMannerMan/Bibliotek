@@ -25,6 +25,7 @@
         // Ask the user to select a book to borrow
         while (!isValidChoice)
         {
+            Console.WriteLine();
             Console.Write($"Enter the number of the book you want to {input}: ");
             string userChoiceOfBookNumber = UI.GetInputWithCancel();
             Console.WriteLine();
@@ -297,6 +298,7 @@
             currentBorrower.borrowedBooksByID.Add(idOfBook);
 
             // Display a success message to the user.
+            Console.WriteLine();
             Console.WriteLine();
             Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine($"{selectedBook.Title} has been borrowed by {fullNameOfBorrower}.");
