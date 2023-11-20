@@ -6,16 +6,16 @@ public class BorrowerHandling
     /// <summary>
     /// Gets or initializes a list of all borrowers in the library.
     /// </summary>
-    public List<Borrower> allLibraryBorrowers;
+    public List<Borrower> AllLibraryBorrowers { get; set; }
 
-    private DataRepository _dataRepository;
+    private readonly DataRepository _dataRepository;
 
     /// <summary>
     /// Initializes a new instance of the BorrowerHandling class with a provided DataRepository.
     /// </summary>
     public BorrowerHandling(DataRepository dataRepository)
     {
-        this.allLibraryBorrowers = dataRepository.LoadBorrowersFromFile();
+        this.AllLibraryBorrowers = dataRepository.LoadBorrowersFromFile();
         this._dataRepository = dataRepository;
     }
 
@@ -24,7 +24,7 @@ public class BorrowerHandling
     /// </summary>
     public void SaveCurrentStatusOfBorrowers()
     {
-        _dataRepository.SaveBorrowersToFile(this.allLibraryBorrowers);
+        _dataRepository.SaveBorrowersToFile(this.AllLibraryBorrowers);
     }
 
     #region Methods that handle borrowers in the library
@@ -85,7 +85,7 @@ public class BorrowerHandling
         else
         {
             // Create a new borrower and add it to the list of Borrowers
-            allLibraryBorrowers.Add(new Borrower(firstName, lastName, socialSecurityNumber)); // Creates a new user and adds it to the list of Borrowers.
+            AllLibraryBorrowers.Add(new Borrower(firstName, lastName, socialSecurityNumber)); // Creates a new user and adds it to the list of Borrowers.
             Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine();
             Console.WriteLine($"{firstName} {lastName} added as a borrower to the library.");
@@ -150,7 +150,7 @@ public class BorrowerHandling
         currentBorrower = null;
 
         // Iterate through all library borrowers to find a match
-        foreach (Borrower borrower in allLibraryBorrowers)
+        foreach (Borrower borrower in AllLibraryBorrowers)
         {
             // Check if the social security number matches
             if (borrower.socialSecurityNumber == socialSecurityNumberToControll)
@@ -231,7 +231,7 @@ public class BorrowerHandling
                     int intToControll = bookID;
 
                     // Loop through all library books to find the matching book
-                    foreach (Book book in bookLibrary.allLibraryBooks)
+                    foreach (Book book in bookLibrary.AllLibraryBooks)
                     {
                         if (book.bookID == intToControll)
                         {
@@ -277,7 +277,7 @@ public class BorrowerHandling
         }
 
         // Filter and return the list of borrowers based on the search criteria
-        List<Borrower> results = allLibraryBorrowers.
+        List<Borrower> results = AllLibraryBorrowers.
             Where(borrower => borrower.FirstName.Contains(searchWord, StringComparison.OrdinalIgnoreCase) ||
             borrower.LastName.Contains(searchWord, StringComparison.OrdinalIgnoreCase) ||
             borrower.socialSecurityNumber.ToString().Contains(searchWord, StringComparison.OrdinalIgnoreCase)).ToList();
@@ -293,7 +293,7 @@ public class BorrowerHandling
         Console.Title = "All library borrowers";
 
         // Display information for all borrowers along with their borrowed books
-        DisplayBorrower(allLibraryBorrowers, bookLibrary);
+        DisplayBorrower(AllLibraryBorrowers, bookLibrary);
 
         UI.PressAKeyToContinue();
     }

@@ -9,7 +9,7 @@ public class Book
     public string Author { get; set; }
     public int bookID { get; set; } // Unique ID for the book
     public int PublishedYear { get; set; }
-    public bool IsBorrowed { get; private set; } = false; // Property to check if the book is borrowed or not
+    public bool IsBorrowed { get; set; } = false; // Property to check if the book is borrowed or not
 
     //Fields for the book
     private string borrowedBy = null; // Name of the borrower (null if not borrowed)

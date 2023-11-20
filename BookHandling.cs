@@ -1,14 +1,14 @@
 ﻿public class BookHandling
 {
-    private BorrowerHandling borrowerHandling;
+    private BorrowerHandling _borrowerHandling;
     private DataRepository _dataRepository;
-    public List<Book> allLibraryBooks;
+    public List<Book> AllLibraryBooks { get; private set; }
 
     public BookHandling(BorrowerHandling borrowerHandling, DataRepository repository)
     {
-        this.borrowerHandling = borrowerHandling;
+        this._borrowerHandling = borrowerHandling;
         _dataRepository = repository;
-        allLibraryBooks = repository.LoadBooksFromFile();
+        AllLibraryBooks = repository.LoadBooksFromFile();
     }
 
     /// <summary>
@@ -56,7 +56,7 @@
     /// </summary>
     public void SaveCurrentStatusOfBooks()
     {
-        _dataRepository.SaveBooksToFile(this.allLibraryBooks);
+        _dataRepository.SaveBooksToFile(this.AllLibraryBooks);
     }
 
     #region Methods to handle adding book to the library
@@ -157,10 +157,10 @@
                 if (ValidDate(parsedYear))
                 {
                     // Generate the next book ID
-                    int nextBookID = allLibraryBooks.Count + 1; // The first ID is 1. So to get the next free ID, look how many book there are and add +1. Example: if there is 2 book. allLibraryBooks.Count + 1 => 2 + 1 => 3 
+                    int nextBookID = AllLibraryBooks.Count + 1; // The first ID is 1. So to get the next free ID, look how many book there are and add +1. Example: if there is 2 book. allLibraryBooks.Count + 1 => 2 + 1 => 3 
 
                     // Add the new book to the list
-                    allLibraryBooks.Add(new Book(userInputTitle, userInputAuthor, parsedYear, nextBookID));
+                    AllLibraryBooks.Add(new Book(userInputTitle, userInputAuthor, parsedYear, nextBookID));
 
                     // Display a success message
                     Console.WriteLine();
@@ -203,7 +203,7 @@
     private bool DoesBookExist(string userInputTitle, out Book foundBook)
     {
         foundBook = null;
-        foreach (Book book in allLibraryBooks)
+        foreach (Book book in AllLibraryBooks)
         {
             if (book.Title.ToLower() == userInputTitle.ToLower())
             {
@@ -287,7 +287,7 @@
         long socialSecurityNumber = BorrowerHandling.GetSocialSecurityNumber();
 
         // Check if the given SSN is valid and if the borrower exists.
-        if (borrowerHandling.BorrowerExist(socialSecurityNumber, out Borrower currentBorrower))
+        if (_borrowerHandling.BorrowerExist(socialSecurityNumber, out Borrower currentBorrower))
         {
             // Construct the borrower's full name.
             string fullNameOfBorrower = $"{currentBorrower.FirstName} {currentBorrower.LastName}";
@@ -394,7 +394,7 @@
 
         // NOTE TO SELF: FOLLOWING LOOPS DOESNT FEEL INTUITIVE. CAN IT BE MADE CLEARER?
         // Iterate through all borrowers to update their records.
-        foreach (Borrower borrower in borrowerHandling.allLibraryBorrowers)
+        foreach (Borrower borrower in _borrowerHandling.AllLibraryBorrowers)
         {
             // Create a list where to copy the books that are to be removed
             List<int> booksToRemove = new List<int>();
@@ -463,7 +463,7 @@
     /// </summary>
     internal void ListAllBooks()
     {
-        DisplayBooks(allLibraryBooks);
+        DisplayBooks(AllLibraryBooks);
         UI.PressAKeyToContinue();
     }
 
@@ -495,7 +495,7 @@
     /// Returns a list of books that match the search criteria.
     /// </summary>
     /// <returns>The list of books matching the search criteria.</returns>
-    internal List<Book> BookSearch()
+    private List<Book> BookSearch()
     {
         Console.Title = "Search menu";
         Console.Clear();
@@ -514,7 +514,7 @@
         }
 
         // Filter the library books based on the search word, ignoring case.
-        List<Book> results = allLibraryBooks.
+        List<Book> results = AllLibraryBooks.
         Where(book => book.Title.Contains(searchWord, StringComparison.OrdinalIgnoreCase) ||
         book.Author.Contains(searchWord, StringComparison.OrdinalIgnoreCase))
         .ToList();
@@ -526,13 +526,13 @@
     /// Creates a list containing books that are currently borrowed.
     /// </summary>
     /// <returns>The list of borrowed books.</returns>
-    internal List<Book> ListAllBorrowedBooks()
+    private List<Book> ListAllBorrowedBooks()
     {
         // Initialize a list to store borrowed books.
         List<Book> borrowedBooks = new List<Book>();
 
         // Iterate through all library books and add borrowed ones to the list.
-        foreach (Book book in allLibraryBooks)
+        foreach (Book book in AllLibraryBooks)
         {
             if (book.IsBorrowed)
             {
@@ -547,13 +547,13 @@
     /// Creates a list containing books that are currently available for loan.
     /// </summary>
     /// <returns>The list of books available for loan.</returns>
-    internal List<Book> ListAllFreeBooks()
+    private List<Book> ListAllFreeBooks()
     {
         // Initialize a list to store books available for loan.
         List<Book> freeBooks = new List<Book>();
         
         // Iterate through all library books and add free ones to the list.
-        foreach (Book book in allLibraryBooks)
+        foreach (Book book in AllLibraryBooks)
         {
             if (book.IsBorrowed == false)
             {
